@@ -1,0 +1,1 @@
+Q1. Command -  tcpdump -n -r hw1.pcap | wc - l
