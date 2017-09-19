@@ -1,1 +1,14 @@
-Q1. Command -  tcpdump -n -r hw1.pcap | wc - l
+Q1. Command -  tcpdump -n -r hw1.pcap | wc -l
+Result : 32664
+Q2.1  Command -  tcpdump -n -r hw1.pcap | grep 'ARP' | wc -l
+	 Command -  tcpdump -n -r hw1.pcap | grep 'UDP' | wc -l
+Result : 32664 + 17166 = 49830
+Q3. 	tcpdump -n -r hw1.pcap src 192.168.0.200 and dst 91.189.90.40  | wc -l  
+ 	tcpdump -n -r hw1.pcap dst 192.168.0.200 and src 91.189.90.40  | wc -l
+
+Result = 16 +12 = 28
+
+Q4. Command - tcpdump -n -r hw1.pcap | awk '{ if (  $3 !~ /Request/ ) {print $3} }' | wc -l | sort | uniq
+Result 1136
+
+Q5.
