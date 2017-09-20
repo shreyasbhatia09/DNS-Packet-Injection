@@ -1,5 +1,4 @@
-Q1. Command -  tcpdump -n -r hw1.pcap | wc -l
-Result : 32664
+Q1.
 Q2.1  Command -  tcpdump -n -r hw1.pcap | grep 'ARP' | wc -l
 	 Command -  tcpdump -n -r hw1.pcap | grep 'UDP' | wc -l
 Result : 32664 + 17166 = 49830
@@ -8,7 +7,134 @@ Q3. 	tcpdump -n -r hw1.pcap src 192.168.0.200 and dst 91.189.90.40  | wc -l
 
 Result = 16 +12 = 28
 
-Q4. Command - tcpdump -n -r hw1.pcap | awk '{ if (  $3 !~ /Request/ ) {print $3} }' | wc -l | sort | uniq
+Q4. Command - tcpdump -n -r hw1.pcap ip | awk '{ print $3}'| grep -oE "([0-9]{1,3}[\.]){3}[0-9]{1,3}" | sort | uniq
 Result 1136
 
 Q5.
+
+Q6. tcpdump -n -r hw1.pcap ip | awk '{ print $5}'| grep -oE "([0-9]{1,3}[\.]){3}[0-9]{1,3}" | sort | uniq
+
+
+ 1.1 How many packets does the trace contain?
+  	Command -  tcpdump -n -r hw1.pcap | wc -l
+	Result : 32664
+ 1.2 How many ARP packets and how many UDP packets?
+	Command -  tcpdump -n -r hw1.pcap | grep 'ARP' | wc -l
+	Command -  tcpdump -n -r hw1.pcap | grep 'UDP' | wc -l
+ 1.3 How many packets were exchanged between 192.168.0.200 and 91.189.90.40?
+	tcpdump -n -r hw1.pcap src 192.168.0.200 and dst 91.189.90.40  | wc -l  
+ 	tcpdump -n -r hw1.pcap dst 192.168.0.200 and src 91.189.90.40  | wc -l
+	Result = 16 +12 = 28
+
+ 1.4 Print the unique source IP addresses found in the trace. 
+	tcpdump -n -r hw1.pcap ip | awk '{ print $3}'| grep -oE "([0-9]{1,3}[\.]){3}[0-9]{1,3}" | sort | uniq
+	Result:
+	0.0.0.0
+	122.154.101.54
+	1.234.31.20
+	130.75.16.5
+	159.148.96.184
+	169.254.56.55
+	192.168.0.1
+	192.168.0.10
+	192.168.0.11
+	192.168.0.12
+	192.168.0.2
+	192.168.0.200
+	192.168.0.3
+	192.168.0.5
+	192.168.0.6
+	192.168.0.7
+	194.168.4.100
+	216.137.63.121
+	216.137.63.137
+	46.51.197.88
+	46.51.197.89
+	62.252.170.81
+	62.252.170.91
+	87.230.23.162
+	87.98.246.8
+	91.189.88.33
+	91.189.89.88
+	91.189.90.40
+	91.189.90.41
+	91.189.91.14
+	91.189.91.15
+	91.189.92.190
+	92.240.68.152
+
+ 1.5 Print the unique private network (according to RFC1918) source IP
+     addresses found in the trace. 
+ 
+ 1.6 Print the unique destination IP addresses found in the trace.
+	tcpdump -n -r hw1.pcap ip | awk '{ print $5}'| grep -oE "([0-9]{1,3}[\.]){3}[0-9]{1,3}" | sort | uniq
+	Result
+	122.154.101.54
+	1.234.31.20
+	130.75.16.5
+	159.148.96.184
+	169.254.255.255
+	192.168.0.12
+	192.168.0.200
+	192.168.0.255
+	194.168.4.100
+	216.137.63.121
+	216.137.63.137
+	224.0.0.22
+	224.0.0.251
+	224.0.0.252
+	224.0.0.253
+	239.255.255.250
+	255.255.255.255
+	46.51.197.88
+	46.51.197.89
+	62.252.170.81
+	62.252.170.91
+	87.230.23.162
+	87.98.246.8
+	91.189.88.33
+	91.189.89.88
+	91.189.90.40
+	91.189.90.41
+	91.189.91.14
+	91.189.91.15
+	91.189.92.190
+	92.240.68.152
+
+ 
+ 1.7 What are the top-5 TCP and top-5 UDP destination ports?
+	Command: tcpdump -n -r hw1.pcap tcp | awk '{ print $5}' | cut -d '.' -f 5 | sed 's/:$//' | sort | uniq -c | sort -rn | head -n 5
+	   Result 
+	    727 80
+	    697 54634
+	    346 49836
+	     61 47110
+	     36 40341
+
+	Command: tcpdump -n -r hw1.pcap udp | awk '{ print $5}' | cut -d '.' -f 5 | sed 's/:$//' | sort | uniq -c | sort -rn | head -n 5
+	Result
+	13178 1900
+	   1925 137
+	   1516 5355
+	    840 5353
+	    399 138	
+ 
+ 1.8 How many TCP packets have the SYN flag set?
+	tcpdump -n -r hw1.pcap 'tcp[tcpflags] & (tcp-syn) != 0' | wc -l
+	Result: 37
+
+ 1.9 How many TCP connection attempts were made?
+ 
+1.10 Towards which ports were TCP connection attempts made? How many attempts
+     per port?
+ 
+1.11 How many HTTP GET requests were made? Print the URLs of all HTTP requests
+     for JPG files.
+
+1.12 When (date and time) was the first and last packet of the trace sent?
+
+1.13 What is the brand of the device that sent most of the packets? What is its
+     IP address?
+
+1.14 Report the distribution of Ethernet packet sizes (how many packets of size
+     X exist in the trace, for all values of X in the trace).
