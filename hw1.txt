@@ -161,6 +161,7 @@
 	date --date  "Jan 1, 1970 00:00:00 +0000 + $(tcpdump -n -r hw1.pcap ip  -tt | sort | tail -n 1 | awk {'print $1'})  seconds"
 	Mon Jan 14 13:26:42 EST 2013
 
+<! IP answer missing in this>
 1.13 What is the brand of the device that sent most of the packets? What is its
      IP address?
 	tcpdump -n -r hw1.pcap -e  | awk '{print $2}' | sort | uniq -c | sort -nr | head -n 1
