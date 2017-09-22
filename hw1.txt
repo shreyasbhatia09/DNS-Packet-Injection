@@ -6,6 +6,7 @@
  1.2 How many ARP packets and how many UDP packets?
 	Command - tcpdump -n -r hw1.pcap arp | wc -l
 	11304
+	<!-- Need to fix this -->
 	Command - tcpdump -n -r hw1.pcap udp | wc -l
 	11304
 
@@ -53,6 +54,7 @@
 
  1.5 Print the unique private network (according to RFC1918) source IP
      addresses found in the trace. 
+     <!--Regex is wrong need to fix this -->
 	Command :tcpdump -n -r hw1.pcap ip | awk '{print $3}' | grep  -oE '^(192\.168| 10\. | 172\.1[6789]\. | 172\.2[0-9]\. | 172\.3[01]\.).{3}[0-9]' | sort | uniq
 	Result :	
 	192.168.0.1
