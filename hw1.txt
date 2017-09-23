@@ -154,11 +154,11 @@
 
 1.12 When (date and time) was the first and last packet of the trace sent?
 	
-	Command : 	date --date  "Jan 1, 1970 00:00:00 +0000 + $(tcpdump -n -r hw1.pcap ip  -tt | sort | head -n 1 | awk {'print $1'})  seconds"
-	Result :Sat Jan 12 11:38:02 EST 2013
-	
-	Command :date --date  "Jan 1, 1970 00:00:00 +0000 + $(tcpdump -n -r hw1.pcap ip  -tt | sort | tail -n 1 | awk {'print $1'})  seconds"
-	Result :Mon Jan 14 13:26:42 EST 2013
+	Command: tcpdump -n -tttt -r hw1.pcap | head -n 1 | cut -d ' ' -f1-2 | cut -d '.' -f 1
+	Result :2013-01-12 12:37:42
+
+	Command: tcpdump -n -tttt -r hw1.pcap | head -n 1 | cut -d ' ' -f1-2 | cut -d '.' -f 1
+	Result :2013-01-12 12:37:42
 
 1.13 What is the brand of the device that sent most of the packets? What is its
      IP address?
