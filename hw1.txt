@@ -157,8 +157,8 @@
 	Command: tcpdump -n -tttt -r hw1.pcap | head -n 1 | cut -d ' ' -f1-2 | cut -d '.' -f 1
 	Result :2013-01-12 12:37:42
 
-	Command: tcpdump -n -tttt -r hw1.pcap | head -n 1 | cut -d ' ' -f1-2 | cut -d '.' -f 1
-	Result :2013-01-12 12:37:42
+	Command: tcpdump -n -tttt -r hw1.pcap | tail -n 1 | cut -d ' ' -f1-2 | cut -d '.' -f 1
+	Result :2013-01-14 14:27:03
 
 1.13 What is the brand of the device that sent most of the packets? What is its
      IP address?
