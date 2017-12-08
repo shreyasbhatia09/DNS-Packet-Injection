@@ -2,9 +2,11 @@
 
 from scapy.all import *
 from optparse import OptionParser
-import socket
+from scapy.utils import PcapWriter
 import netifaces
 
+
+# https://stackoverflow.com/questions/7574092/python-scapy-wrpcap-how-do-you-append-packets-to-a-pcap-file
 class DNSDetect:
     def __init__(self, interface, pcap_file, expression):
         self.interface = interface
@@ -15,13 +17,21 @@ class DNSDetect:
             self.interface = str(interfaces[0])
         self.pcap_file = pcap_file
         self.expression = expression
+        self.pcap_dump = PcapWriter(self.pcap_file, append=True, sync=True)
 
     def start_detection(self):
         packets = []
         def callback(packet):
-            if  packet.haslayer(DNS) and packet.haslayer(DNSRR):
-                if packet in packets:
-                    pass
+            if packet.haslayer(DNS) and packet.haslayer(DNSRR) and packet[DNS].qr == 1:
+                for prev_packet in packets:
+                    if prev_packet[DNS].id  == packet[DNS].id and \
+                    packet[DNS].qd.qname == prev_packet[DNS].qd.qname and\
+                    packet[1][DNSRR].rdata != prev_packet[1][DNSRR].rdata:
+                        print "Spoofing detected"
+                        print packet.summary()
+                        self.pcap_dump.write(packet)
+            packets.append(packet)
+
 
         sniff(
             filter=self.expression,
@@ -30,11 +40,6 @@ class DNSDetect:
             iface=self.interface
         )
 
-    def get_local_ip(self):
-            # return "127.0.0.1"
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            return s.getsockname()[0]
 
 if __name__ == '__main__':
     optparser = OptionParser()
