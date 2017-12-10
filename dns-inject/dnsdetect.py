@@ -69,7 +69,7 @@ class DNSDetect:
                 packets.append(packet)
 
         # Callback ends here
-
+        print "Starting DNS Spoof attack detection"
         # Let the sniffing begin!
         if self.pcap_file is not None:
             sniff(
@@ -101,5 +101,5 @@ if __name__ == '__main__':
                            options.pcapfile,
                            expression
                            )
-    print "Starting DNS Spoof attack detection"
+
     dns_detect.start_detection()
